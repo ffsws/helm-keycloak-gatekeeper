@@ -1,0 +1,10 @@
+name: keycloak-gatekeeper
+version: 0.1.0
+appVersion: 0.1.0
+description: keycloak-gatekeeper
+home: https://keycloak.org
+sources:
+  - https://github.com/keycloak/keycloak-gatekeeper
+maintainers:
+  - name: Sylvain Chen
+engine: gotpl

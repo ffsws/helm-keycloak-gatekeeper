@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+{{- if .Values.KeycloakGatekeeper.annotations }}
+  annotations:
+{{ toYaml .Values.KeycloakGatekeeper.annotations | indent 4 }}
+{{- end }}
+  labels:
+{{- include "keycloak-gatekeeper.labels" . | nindent 4 }}
+  {{- if .Values.KeycloakGatekeeper.labels }}
+{{ toYaml .Values.KeycloakGatekeeper.labels | indent 4 }}
+  {{- end }}
+  name: {{ template "keycloak-gatekeeper.name" . }}
+spec:
+  replicas: {{ .Values.KeycloakGatekeeper.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "keycloak-gatekeeper.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/configmap-sso: {{ include (print $.Template.BasePath "/keycloak-gatekeeper-configmap.yaml") . | sha256sum }}
+      {{- if .Values.KeycloakGatekeeper.podAnnotations }}
+{{ toYaml .Values.KeycloakGatekeeper.podAnnotations | indent 8 }}
+      {{- end }}
+      labels:
+      {{- include "keycloak-gatekeeper.labels" . | nindent 8 }}
+      {{- if .Values.podLabels }}
+{{ toYaml .Values.podLabels | nindent 8 }}
+      {{- end }}
+    spec:
+      containers:
+      - args: ["--config", "/etc/keycloak/keycloak-gatekeeper.conf"]
+        name: "{{ .Values.KeycloakGatekeeper.name }}"
+        image: "{{ .Values.KeycloakGatekeeper.image.repository }}:{{ .Values.KeycloakGatekeeper.image.tag }}"
+        imagePullPolicy: "{{ .Values.KeycloakGatekeeper.image.pullPolicy }}"
+        livenessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: {{ .Values.KeycloakGatekeeper.port }}
+          timeoutSeconds: 1
+        ports:
+        - containerPort: {{ .Values.KeycloakGatekeeper.port }}
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          tcpSocket:
+            port: {{ .Values.KeycloakGatekeeper.port }}
+          timeoutSeconds: 1
+        {{- if .Values.KeycloakGatekeeper.resources }}
+        resources:
+{{ toYaml .Values.KeycloakGatekeeper.resources | indent 10 }}
+        {{- end }}
+        volumeMounts:
+        - name: keycloak-gatekeeper
+          mountPath: /etc/keycloak/keycloak-gatekeeper.conf
+          readOnly: true
+          subPath: keycloak-gatekeeper-{{ .Values.app.name }}.conf
+        - name: keycloak-gatekeeper-templates
+          mountPath: /opt/templates
+          readOnly: true
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - {{ template "keycloak-gatekeeper.name" . }}
+              namespaces:
+              - {{ .Release.Namespace }}
+              topologyKey: location
+            weight: 50
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - {{ template "keycloak-gatekeeper.name" . }}
+              namespaces:
+              - {{ .Release.Namespace }}
+              topologyKey: kubernetes.io/hostname
+            weight: 30
+      volumes:
+      - name: keycloak-gatekeeper
+        configMap:
+          defaultMode: 420
+          name: {{ template "keycloak-gatekeeper.name" . }}
+      - name: keycloak-gatekeeper-templates
+        configMap:
+          defaultMode: 420
+          name: {{ template "keycloak-gatekeeper.name" . }}-templates

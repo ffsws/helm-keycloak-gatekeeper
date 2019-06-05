@@ -1,0 +1,36 @@
+KeycloakGatekeeper:
+  name: keycloak-gatekeeper
+  clientId: XXX
+  clientSecret: YYY
+  discoveryURL: https://example.com/auth/realm/demo/
+#  encryptionKey: ZZZ
+  image:
+    repository: quay.io/keycloak/keycloak-gatekeeper
+    tag: 6.0.1
+    pullPolicy: IfNotPresent
+#  podAnnotations:
+#    prometheus.io/path: "oauth/metrics"
+#    prometheus.io/port: "3000"
+#    prometheus.io/scrape: "true"
+  port: 3000
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  # list of roles to use to protect the app
+  roles:
+  - roletest
+  skipTls: false
+
+app:
+  # App name
+  name: grafana
+  service:
+    ## OpenShift Service name
+    name: grafana
+    ## OpenShift service port
+    port: 3000

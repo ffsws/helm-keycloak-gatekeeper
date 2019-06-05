@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+{{- include "keycloak-gatekeeper.labels" . | nindent 4 }}
+  name: {{ include "keycloak-gatekeeper.name" . }}
+spec:
+  clusterIP: ""
+  ports:
+  - name: "{{ .Values.KeycloakGatekeeper.name }}"
+    port: {{ .Values.KeycloakGatekeeper.port }}
+    protocol: TCP
+    targetPort: {{ .Values.KeycloakGatekeeper.port }}
+  selector:
+{{- include "keycloak-gatekeeper.matchLabels" . | nindent 4 }}
+  type: "ClusterIP"
