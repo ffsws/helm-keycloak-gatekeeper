@@ -28,9 +28,9 @@ KeycloakGatekeeper:
 
 app:
   # App name
-  name: grafana
+  name: prometheus
   service:
     ## OpenShift Service name
-    name: grafana
+    name: prometheus
     ## OpenShift service port
     port: 3000
